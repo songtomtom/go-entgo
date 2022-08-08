@@ -3,7 +3,7 @@ version: '2'
 services:
   mysql:
     image: mysql:5.7
-    container_name: test_entgo_mysql
+    container_name: entgo_mysql
     restart: always
     environment:
       MYSQL_USER: test
@@ -13,4 +13,7 @@ services:
     command: [ '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci' ]
     ports:
       - 33016:3306
-
+    healthcheck:
+      test: "/etc/init.d/mysql status"
+      interval: 1s
+      retries: 120
