@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: test_entgo_mysql
+    restart: always
+    environment:
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: test
+    command: [ '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci' ]
+    ports:
+      - 33016:3306
+
