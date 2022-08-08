@@ -19,6 +19,38 @@ type User struct {
 	Age int `json:"age,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges UserEdges `json:"edges"`
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Pets holds the value of the pets edge.
+	Pets []*Pet `json:"pets,omitempty"`
+	// Groups holds the value of the groups edge.
+	Groups []*Group `json:"groups,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// PetsOrErr returns the Pets value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PetsOrErr() ([]*Pet, error) {
+	if e.loadedTypes[0] {
+		return e.Pets, nil
+	}
+	return nil, &NotLoadedError{edge: "pets"}
+}
+
+// GroupsOrErr returns the Groups value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupsOrErr() ([]*Group, error) {
+	if e.loadedTypes[1] {
+		return e.Groups, nil
+	}
+	return nil, &NotLoadedError{edge: "groups"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -66,6 +98,16 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryPets queries the "pets" edge of the User entity.
+func (u *User) QueryPets() *PetQuery {
+	return (&UserClient{config: u.config}).QueryPets(u)
+}
+
+// QueryGroups queries the "groups" edge of the User entity.
+func (u *User) QueryGroups() *GroupQuery {
+	return (&UserClient{config: u.config}).QueryGroups(u)
 }
 
 // Update returns a builder for updating this User.

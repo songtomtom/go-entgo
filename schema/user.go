@@ -6,19 +6,23 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type Pet struct {
+// User holds the schema definition for the User entity.
+type User struct {
 	ent.Schema
 }
 
-func (Pet) Fields() []ent.Field {
+// Fields of the User.
+func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("age").Positive(),
 		field.String("name").Default("unknown"),
 	}
 }
 
-func (Pet) Edges() []ent.Edge {
+// Edges of the User.
+func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("pets", Pet.Type),
+		edge.From("groups", Group.Type).Ref("users"),
 	}
 }
