@@ -8,6 +8,27 @@ import (
 )
 
 var (
+	// CardsColumns holds the columns for the "cards" table.
+	CardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "expired", Type: field.TypeTime},
+		{Name: "number", Type: field.TypeString},
+		{Name: "user_card", Type: field.TypeInt, Unique: true},
+	}
+	// CardsTable holds the schema information for the "cards" table.
+	CardsTable = &schema.Table{
+		Name:       "cards",
+		Columns:    CardsColumns,
+		PrimaryKey: []*schema.Column{CardsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cards_users_card",
+				Columns:    []*schema.Column{CardsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -80,6 +101,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CardsTable,
 		GroupsTable,
 		PetsTable,
 		UsersTable,
@@ -88,6 +110,7 @@ var (
 )
 
 func init() {
+	CardsTable.ForeignKeys[0].RefTable = UsersTable
 	PetsTable.ForeignKeys[0].RefTable = UsersTable
 	GroupUsersTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupUsersTable.ForeignKeys[1].RefTable = UsersTable

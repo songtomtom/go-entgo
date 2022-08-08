@@ -3,16 +3,24 @@
 package ent
 
 import (
+	"go-entgo/ent/card"
 	"go-entgo/ent/group"
 	"go-entgo/ent/pet"
 	"go-entgo/ent/user"
 	"go-entgo/schema"
+	"time"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	cardFields := schema.Card{}.Fields()
+	_ = cardFields
+	// cardDescExpired is the schema descriptor for expired field.
+	cardDescExpired := cardFields[0].Descriptor()
+	// card.DefaultExpired holds the default value on creation for the expired field.
+	card.DefaultExpired = cardDescExpired.Default.(time.Time)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescAge is the schema descriptor for age field.

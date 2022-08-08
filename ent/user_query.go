@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"go-entgo/ent/card"
 	"go-entgo/ent/group"
 	"go-entgo/ent/pet"
 	"go-entgo/ent/predicate"
@@ -29,6 +30,7 @@ type UserQuery struct {
 	// eager-loading edges.
 	withPets   *PetQuery
 	withGroups *GroupQuery
+	withCard   *CardQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -102,6 +104,28 @@ func (uq *UserQuery) QueryGroups() *GroupQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, user.GroupsTable, user.GroupsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCard chains the current query on the "card" edge.
+func (uq *UserQuery) QueryCard() *CardQuery {
+	query := &CardQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(card.Table, card.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.CardTable, user.CardColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -292,6 +316,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		predicates: append([]predicate.User{}, uq.predicates...),
 		withPets:   uq.withPets.Clone(),
 		withGroups: uq.withGroups.Clone(),
+		withCard:   uq.withCard.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -318,6 +343,17 @@ func (uq *UserQuery) WithGroups(opts ...func(*GroupQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withGroups = query
+	return uq
+}
+
+// WithCard tells the query-builder to eager-load the nodes that are connected to
+// the "card" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithCard(opts ...func(*CardQuery)) *UserQuery {
+	query := &CardQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withCard = query
 	return uq
 }
 
@@ -391,9 +427,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			uq.withPets != nil,
 			uq.withGroups != nil,
+			uq.withCard != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -494,6 +531,34 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			for kn := range nodes {
 				kn.Edges.Groups = append(kn.Edges.Groups, n)
 			}
+		}
+	}
+
+	if query := uq.withCard; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.Card(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.CardColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.user_card
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "user_card" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_card" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Card = n
 		}
 	}
 

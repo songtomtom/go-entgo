@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go-entgo/ent/card"
 	"go-entgo/ent/group"
 	"go-entgo/ent/pet"
 	"go-entgo/ent/predicate"
@@ -86,6 +87,25 @@ func (uu *UserUpdate) AddGroups(g ...*Group) *UserUpdate {
 	return uu.AddGroupIDs(ids...)
 }
 
+// SetCardID sets the "card" edge to the Card entity by ID.
+func (uu *UserUpdate) SetCardID(id int) *UserUpdate {
+	uu.mutation.SetCardID(id)
+	return uu
+}
+
+// SetNillableCardID sets the "card" edge to the Card entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableCardID(id *int) *UserUpdate {
+	if id != nil {
+		uu = uu.SetCardID(*id)
+	}
+	return uu
+}
+
+// SetCard sets the "card" edge to the Card entity.
+func (uu *UserUpdate) SetCard(c *Card) *UserUpdate {
+	return uu.SetCardID(c.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -131,6 +151,12 @@ func (uu *UserUpdate) RemoveGroups(g ...*Group) *UserUpdate {
 		ids[i] = g[i].ID
 	}
 	return uu.RemoveGroupIDs(ids...)
+}
+
+// ClearCard clears the "card" edge to the Card entity.
+func (uu *UserUpdate) ClearCard() *UserUpdate {
+	uu.mutation.ClearCard()
+	return uu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -350,6 +376,41 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.CardCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CardTable,
+			Columns: []string{user.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: card.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CardIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CardTable,
+			Columns: []string{user.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: card.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -426,6 +487,25 @@ func (uuo *UserUpdateOne) AddGroups(g ...*Group) *UserUpdateOne {
 	return uuo.AddGroupIDs(ids...)
 }
 
+// SetCardID sets the "card" edge to the Card entity by ID.
+func (uuo *UserUpdateOne) SetCardID(id int) *UserUpdateOne {
+	uuo.mutation.SetCardID(id)
+	return uuo
+}
+
+// SetNillableCardID sets the "card" edge to the Card entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableCardID(id *int) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetCardID(*id)
+	}
+	return uuo
+}
+
+// SetCard sets the "card" edge to the Card entity.
+func (uuo *UserUpdateOne) SetCard(c *Card) *UserUpdateOne {
+	return uuo.SetCardID(c.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -471,6 +551,12 @@ func (uuo *UserUpdateOne) RemoveGroups(g ...*Group) *UserUpdateOne {
 		ids[i] = g[i].ID
 	}
 	return uuo.RemoveGroupIDs(ids...)
+}
+
+// ClearCard clears the "card" edge to the Card entity.
+func (uuo *UserUpdateOne) ClearCard() *UserUpdateOne {
+	uuo.mutation.ClearCard()
+	return uuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -712,6 +798,41 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: group.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CardCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CardTable,
+			Columns: []string{user.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: card.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CardIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CardTable,
+			Columns: []string{user.CardColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: card.FieldID,
 				},
 			},
 		}

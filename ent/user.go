@@ -4,6 +4,7 @@ package ent
 
 import (
 	"fmt"
+	"go-entgo/ent/card"
 	"go-entgo/ent/user"
 	"strings"
 
@@ -30,9 +31,11 @@ type UserEdges struct {
 	Pets []*Pet `json:"pets,omitempty"`
 	// Groups holds the value of the groups edge.
 	Groups []*Group `json:"groups,omitempty"`
+	// Card holds the value of the card edge.
+	Card *Card `json:"card,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PetsOrErr returns the Pets value or an error if the edge
@@ -51,6 +54,20 @@ func (e UserEdges) GroupsOrErr() ([]*Group, error) {
 		return e.Groups, nil
 	}
 	return nil, &NotLoadedError{edge: "groups"}
+}
+
+// CardOrErr returns the Card value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) CardOrErr() (*Card, error) {
+	if e.loadedTypes[2] {
+		if e.Card == nil {
+			// The edge card was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: card.Label}
+		}
+		return e.Card, nil
+	}
+	return nil, &NotLoadedError{edge: "card"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -108,6 +125,11 @@ func (u *User) QueryPets() *PetQuery {
 // QueryGroups queries the "groups" edge of the User entity.
 func (u *User) QueryGroups() *GroupQuery {
 	return (&UserClient{config: u.config}).QueryGroups(u)
+}
+
+// QueryCard queries the "card" edge of the User entity.
+func (u *User) QueryCard() *CardQuery {
+	return (&UserClient{config: u.config}).QueryCard(u)
 }
 
 // Update returns a builder for updating this User.

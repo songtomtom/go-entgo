@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"entgo.io/ent/dialect"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"go-entgo/ent"
+	"log"
+	"time"
 )
 
 type (
@@ -34,9 +37,54 @@ func main() {
 
 	client, err := ent.Open(dialect.MySQL, db.GetDSN(), ent.Debug())
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed opening connection to sqlite: %v", err)
+	}
+	defer client.Close()
+	ctx := context.Background()
+
+	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
 	}
 
 	fmt.Println("connect success", client)
 
+	Do(ctx, client)
+
+}
+
+func Do(ctx context.Context, client *ent.Client) error {
+	a8m, err := client.User.
+		Create().
+		SetAge(30).
+		SetName("Tom").
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	card1, err := client.Card.
+		Create().
+		SetOwner(a8m).
+		SetNumber("1020").
+		SetExpired(time.Now().Add(time.Minute)).
+		Save(ctx)
+
+	log.Println("card:", card1)
+	if err != nil {
+		return err
+	}
+
+	card2, err := a8m.QueryCard().Only(ctx)
+	if err != nil {
+		return fmt.Errorf("querying card: %w", err)
+	}
+	log.Println("card:", card2)
+
+	owner, err := card2.QueryOwner().Only(ctx)
+	if err != nil {
+		return fmt.Errorf("querying owner: %w", err)
+	}
+	log.Println("owner:", owner)
+
+	return nil
 }

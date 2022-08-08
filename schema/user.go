@@ -24,5 +24,6 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("pets", Pet.Type),
 		edge.From("groups", Group.Type).Ref("users"),
+		edge.To("card", Card.Type).Unique(),
 	}
 }
